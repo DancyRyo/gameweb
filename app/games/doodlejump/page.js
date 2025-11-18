@@ -9,8 +9,12 @@ const CANVAS_HEIGHT = 600;
 const PLAYER_SIZE = 40;
 const PLATFORM_WIDTH = 80;
 const PLATFORM_HEIGHT = 15;
-const GRAVITY = 0.5;
-const JUMP_FORCE = -12;
+
+const DIFFICULTY_SETTINGS = {
+  easy: { gravity: 0.35, jumpForce: -10, playerSpeed: 4, platformSpacing: 60 },
+  medium: { gravity: 0.5, jumpForce: -12, playerSpeed: 5, platformSpacing: 75 },
+  hard: { gravity: 0.65, jumpForce: -14, playerSpeed: 6, platformSpacing: 90 }
+};
 
 export default function DoodleJumpGame() {
   const { t } = useLanguage();
@@ -19,6 +23,7 @@ export default function DoodleJumpGame() {
   const [highScore, setHighScore] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [gameOver, setGameOver] = useState(false);
+  const [difficulty, setDifficulty] = useState('medium');
   const gameStateRef = useRef({
     player: { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT - 100, velocityY: 0 },
     platforms: [],
@@ -32,11 +37,12 @@ export default function DoodleJumpGame() {
   }, []);
 
   const initPlatforms = () => {
+    const settings = DIFFICULTY_SETTINGS[difficulty];
     const platforms = [];
     for (let i = 0; i < 8; i++) {
       platforms.push({
         x: Math.random() * (CANVAS_WIDTH - PLATFORM_WIDTH),
-        y: i * 75 + 100
+        y: i * settings.platformSpacing + 100
       });
     }
     return platforms;
@@ -48,7 +54,8 @@ export default function DoodleJumpGame() {
       player: { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT - 100, velocityY: 0 },
       platforms: initialPlatforms,
       score: 0,
-      keys: {}
+      keys: {},
+      difficulty: difficulty
     };
     setScore(0);
     setIsPlaying(true);
@@ -74,13 +81,14 @@ export default function DoodleJumpGame() {
 
     const gameLoop = setInterval(() => {
       const state = gameStateRef.current;
+      const settings = DIFFICULTY_SETTINGS[state.difficulty || 'medium'];
 
       // Player movement
       if (state.keys['ArrowLeft']) {
-        state.player.x -= 5;
+        state.player.x -= settings.playerSpeed;
       }
       if (state.keys['ArrowRight']) {
-        state.player.x += 5;
+        state.player.x += settings.playerSpeed;
       }
 
       // Wrap around screen
@@ -88,7 +96,7 @@ export default function DoodleJumpGame() {
       if (state.player.x > CANVAS_WIDTH) state.player.x = 0;
 
       // Gravity
-      state.player.velocityY += GRAVITY;
+      state.player.velocityY += settings.gravity;
       state.player.y += state.player.velocityY;
 
       // Platform collision (only when falling)
@@ -100,7 +108,7 @@ export default function DoodleJumpGame() {
             state.player.y + PLAYER_SIZE > platform.y &&
             state.player.y + PLAYER_SIZE < platform.y + PLATFORM_HEIGHT + 10
           ) {
-            state.player.velocityY = JUMP_FORCE;
+            state.player.velocityY = settings.jumpForce;
           }
         });
       }
@@ -122,7 +130,7 @@ export default function DoodleJumpGame() {
         while (state.platforms.length < 8) {
           state.platforms.push({
             x: Math.random() * (CANVAS_WIDTH - PLATFORM_WIDTH),
-            y: state.platforms.length > 0 ? Math.min(...state.platforms.map(p => p.y)) - 75 : 0
+            y: state.platforms.length > 0 ? Math.min(...state.platforms.map(p => p.y)) - settings.platformSpacing : 0
           });
         }
       }
@@ -179,6 +187,19 @@ export default function DoodleJumpGame() {
           <div className="flex justify-between items-center mb-6">
             <div className="text-lg font-semibold text-gray-700">
               {t.score}: <span className="text-blue-600">{Math.floor(score)}</span>
+            </div>
+            <div className="text-lg font-semibold text-gray-700">
+              {t.difficulty}:
+              <select
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value)}
+                disabled={isPlaying}
+                className="ml-2 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="easy">{t.easy}</option>
+                <option value="medium">{t.medium}</option>
+                <option value="hard">{t.hard}</option>
+              </select>
             </div>
             <div className="text-lg font-semibold text-gray-700">
               {t.highScore}: <span className="text-purple-600">{Math.floor(highScore)}</span>

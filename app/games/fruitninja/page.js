@@ -8,6 +8,12 @@ const GAME_TIME = 60;
 const FRUITS = ['🍎', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🥝'];
 const BOMBS = ['💣'];
 
+const DIFFICULTY_SETTINGS = {
+  easy: { spawnInterval: 1500, fruitSpeed: 0.4, bombChance: 0.1 },
+  medium: { spawnInterval: 1000, fruitSpeed: 0.6, bombChance: 0.2 },
+  hard: { spawnInterval: 700, fruitSpeed: 0.8, bombChance: 0.3 }
+};
+
 export default function FruitNinjaGame() {
   const { t } = useLanguage();
   const [score, setScore] = useState(0);
@@ -16,6 +22,7 @@ export default function FruitNinjaGame() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [lives, setLives] = useState(3);
   const [fruits, setFruits] = useState([]);
+  const [difficulty, setDifficulty] = useState('medium');
   const timerRef = useRef(null);
   const spawnRef = useRef(null);
 
@@ -31,10 +38,12 @@ export default function FruitNinjaGame() {
     setIsPlaying(true);
     setFruits([]);
 
+    const settings = DIFFICULTY_SETTINGS[difficulty];
+
     // Spawn fruits
     spawnRef.current = setInterval(() => {
       spawnFruit();
-    }, 1000);
+    }, settings.spawnInterval);
 
     // Timer
     timerRef.current = setInterval(() => {
@@ -49,13 +58,15 @@ export default function FruitNinjaGame() {
   };
 
   const spawnFruit = () => {
-    const isBomb = Math.random() < 0.2;
+    const settings = DIFFICULTY_SETTINGS[difficulty];
+    const isBomb = Math.random() < settings.bombChance;
     const newFruit = {
       id: Date.now() + Math.random(),
       emoji: isBomb ? BOMBS[0] : FRUITS[Math.floor(Math.random() * FRUITS.length)],
       isBomb,
       left: Math.random() * 80 + 10,
-      bottom: -10
+      bottom: -10,
+      speed: settings.fruitSpeed
     };
 
     setFruits(prev => [...prev, newFruit]);
@@ -115,6 +126,19 @@ export default function FruitNinjaGame() {
               {t.score}: <span className="text-blue-600">{score}</span>
             </div>
             <div className="text-lg font-semibold text-gray-700">
+              {t.difficulty}:
+              <select
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value)}
+                disabled={isPlaying}
+                className="ml-2 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="easy">{t.easy}</option>
+                <option value="medium">{t.medium}</option>
+                <option value="hard">{t.hard}</option>
+              </select>
+            </div>
+            <div className="text-lg font-semibold text-gray-700">
               {t.time}: <span className="text-green-600">{timeLeft}s</span>
             </div>
             <div className="text-lg font-semibold text-gray-700">
@@ -134,7 +158,7 @@ export default function FruitNinjaGame() {
                 style={{
                   left: `${fruit.left}%`,
                   bottom: `${fruit.bottom}%`,
-                  animation: 'rise 3s linear'
+                  animation: `rise ${3 / (fruit.speed || 0.5)}s linear`
                 }}
               >
                 {fruit.emoji}

@@ -8,7 +8,13 @@ const GRID_SIZE = 20;
 const CELL_SIZE = 20;
 const INITIAL_SNAKE = [{ x: 10, y: 10 }];
 const INITIAL_DIRECTION = { x: 1, y: 0 };
-const GAME_SPEED = 150;
+
+const DIFFICULTY_SETTINGS = {
+  easy: { speed: 200, name: 'Easy' },
+  medium: { speed: 150, name: 'Medium' },
+  hard: { speed: 100, name: 'Hard' },
+  veryhard: { speed: 60, name: 'Very Hard' }
+};
 
 export default function SnakeGame() {
   const { t } = useLanguage();
@@ -20,6 +26,7 @@ export default function SnakeGame() {
   const [highScore, setHighScore] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [difficulty, setDifficulty] = useState('medium');
   const gameLoopRef = useRef(null);
   const nextDirectionRef = useRef(INITIAL_DIRECTION);
 
@@ -104,10 +111,11 @@ export default function SnakeGame() {
 
   useEffect(() => {
     if (isPlaying && !isPaused && !gameOver) {
-      gameLoopRef.current = setInterval(gameLoop, GAME_SPEED);
+      const gameSpeed = DIFFICULTY_SETTINGS[difficulty].speed;
+      gameLoopRef.current = setInterval(gameLoop, gameSpeed);
       return () => clearInterval(gameLoopRef.current);
     }
-  }, [isPlaying, isPaused, gameOver, gameLoop]);
+  }, [isPlaying, isPaused, gameOver, gameLoop, difficulty]);
 
   useEffect(() => {
     const handleKeyPress = (e) => {
@@ -147,9 +155,23 @@ export default function SnakeGame() {
     <GameLayout gameId="snake">
       <div className="flex flex-col items-center gap-6">
         <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-2xl">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
             <div className="text-lg font-semibold text-gray-700">
               {t.score}: <span className="text-blue-600">{score}</span>
+            </div>
+            <div className="text-lg font-semibold text-gray-700">
+              {t.difficulty}:
+              <select
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value)}
+                disabled={isPlaying}
+                className="ml-2 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="easy">{t.easy}</option>
+                <option value="medium">{t.medium}</option>
+                <option value="hard">{t.hard}</option>
+                <option value="veryhard">Very Hard</option>
+              </select>
             </div>
             <div className="text-lg font-semibold text-gray-700">
               {t.highScore}: <span className="text-purple-600">{highScore}</span>
@@ -236,12 +258,38 @@ export default function SnakeGame() {
             )}
           </div>
 
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <h3 className="font-semibold text-gray-800 mb-2">{t.controls}</h3>
-            <p className="text-gray-600">{t.games.snake.controls}</p>
-            <p className="text-gray-600 mt-2">
-              {t.language === 'en' ? 'Press Space to pause/resume' : '按空格键暂停/继续'}
-            </p>
+          <div className="mt-6 space-y-4">
+            <div className="p-4 bg-blue-50 rounded-lg">
+              <h3 className="font-semibold text-gray-800 mb-2">{t.controls}</h3>
+              <p className="text-gray-600">{t.games.snake.controls}</p>
+              <p className="text-gray-600 mt-2">
+                {t.language === 'en' ? 'Press Space to pause/resume' : '按空格键暂停/继续'}
+              </p>
+            </div>
+
+            <div className="p-4 bg-purple-50 rounded-lg">
+              <h3 className="font-semibold text-gray-800 mb-2">
+                {t.language === 'en' ? 'Difficulty Levels' : '难度级别'}
+              </h3>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  <span className="text-gray-600">{t.easy}: {t.language === 'en' ? 'Slow' : '慢速'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                  <span className="text-gray-600">{t.medium}: {t.language === 'en' ? 'Normal' : '正常'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                  <span className="text-gray-600">{t.hard}: {t.language === 'en' ? 'Fast' : '快速'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                  <span className="text-gray-600">Very Hard: {t.language === 'en' ? 'Very Fast' : '超快'}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

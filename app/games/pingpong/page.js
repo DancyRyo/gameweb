@@ -10,6 +10,12 @@ const PADDLE_WIDTH = 10;
 const PADDLE_HEIGHT = 80;
 const BALL_SIZE = 10;
 
+const DIFFICULTY_SETTINGS = {
+  easy: { ballSpeed: 3, aiSpeed: 2.5 },
+  medium: { ballSpeed: 5, aiSpeed: 4 },
+  hard: { ballSpeed: 7, aiSpeed: 6 }
+};
+
 export default function PingPongGame() {
   const { t } = useLanguage();
   const canvasRef = useRef(null);
@@ -18,6 +24,7 @@ export default function PingPongGame() {
   const [highScore, setHighScore] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [gameOver, setGameOver] = useState(false);
+  const [difficulty, setDifficulty] = useState('medium');
   const gameStateRef = useRef({
     player: { x: 20, y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2 },
     ai: { x: CANVAS_WIDTH - 30, y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2 },
@@ -35,15 +42,17 @@ export default function PingPongGame() {
   }, []);
 
   const startGame = () => {
+    const settings = DIFFICULTY_SETTINGS[difficulty];
     gameStateRef.current = {
       player: { x: 20, y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2 },
       ai: { x: CANVAS_WIDTH - 30, y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2 },
       ball: {
         x: CANVAS_WIDTH / 2,
         y: CANVAS_HEIGHT / 2,
-        velocityX: 5 * (Math.random() > 0.5 ? 1 : -1),
-        velocityY: 5 * (Math.random() > 0.5 ? 1 : -1)
-      }
+        velocityX: settings.ballSpeed * (Math.random() > 0.5 ? 1 : -1),
+        velocityY: settings.ballSpeed * (Math.random() > 0.5 ? 1 : -1)
+      },
+      difficulty: difficulty
     };
     setPlayerScore(0);
     setAIScore(0);
@@ -53,11 +62,12 @@ export default function PingPongGame() {
 
   const resetBall = (direction) => {
     const state = gameStateRef.current;
+    const settings = DIFFICULTY_SETTINGS[state.difficulty || 'medium'];
     state.ball = {
       x: CANVAS_WIDTH / 2,
       y: CANVAS_HEIGHT / 2,
-      velocityX: 5 * direction,
-      velocityY: 5 * (Math.random() > 0.5 ? 1 : -1)
+      velocityX: settings.ballSpeed * direction,
+      velocityY: settings.ballSpeed * (Math.random() > 0.5 ? 1 : -1)
     };
   };
 
@@ -115,12 +125,13 @@ export default function PingPongGame() {
       }
 
       // AI movement (simple AI that follows the ball)
+      const settings = DIFFICULTY_SETTINGS[state.difficulty || 'medium'];
       const aiCenter = state.ai.y + PADDLE_HEIGHT / 2;
       const ballCenter = state.ball.y + BALL_SIZE / 2;
       if (aiCenter < ballCenter - 35) {
-        state.ai.y += 4;
+        state.ai.y += settings.aiSpeed;
       } else if (aiCenter > ballCenter + 35) {
-        state.ai.y -= 4;
+        state.ai.y -= settings.aiSpeed;
       }
       state.ai.y = Math.max(0, Math.min(CANVAS_HEIGHT - PADDLE_HEIGHT, state.ai.y));
 
@@ -199,7 +210,17 @@ export default function PingPongGame() {
               Player: <span className="text-2xl">{playerScore}</span>
             </div>
             <div className="text-lg font-semibold text-gray-700">
-              First to 10 wins!
+              {t.difficulty}:
+              <select
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value)}
+                disabled={isPlaying}
+                className="ml-2 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="easy">{t.easy}</option>
+                <option value="medium">{t.medium}</option>
+                <option value="hard">{t.hard}</option>
+              </select>
             </div>
             <div className="text-lg font-semibold text-red-600">
               AI: <span className="text-2xl">{aiScore}</span>

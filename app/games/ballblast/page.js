@@ -4,6 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import GameLayout from '@/components/GameLayout';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+const DIFFICULTY_SETTINGS = {
+  easy: { ballSpeed: 0.3, maxNumber: 3, shootInterval: 300 },
+  medium: { ballSpeed: 0.5, maxNumber: 5, shootInterval: 200 },
+  hard: { ballSpeed: 0.7, maxNumber: 7, shootInterval: 200 }
+};
+
 export default function BallBlastGame() {
   const { t } = useLanguage();
   const [score, setScore] = useState(0);
@@ -12,6 +18,7 @@ export default function BallBlastGame() {
   const [cannonX, setCannonX] = useState(50);
   const [balls, setBalls] = useState([]);
   const [bullets, setBullets] = useState([]);
+  const [difficulty, setDifficulty] = useState('medium');
   const gameRef = useRef(null);
   const animationRef = useRef(null);
   const shootIntervalRef = useRef(null);
@@ -31,12 +38,13 @@ export default function BallBlastGame() {
   };
 
   const spawnBall = () => {
+    const settings = DIFFICULTY_SETTINGS[difficulty];
     const newBall = {
       id: Date.now(),
       x: Math.random() * 80 + 10,
       y: 0,
-      number: Math.floor(Math.random() * 5) + 1,
-      speed: 0.5 + Math.random() * 0.5
+      number: Math.floor(Math.random() * settings.maxNumber) + 1,
+      speed: settings.ballSpeed + Math.random() * 0.2
     };
     setBalls(prev => [...prev, newBall]);
   };
@@ -61,13 +69,14 @@ export default function BallBlastGame() {
 
   const startShooting = () => {
     if (!isPlaying) return;
+    const settings = DIFFICULTY_SETTINGS[difficulty];
     shootIntervalRef.current = setInterval(() => {
       setBullets(prev => [...prev, {
         id: Date.now() + Math.random(),
         x: cannonX,
         y: 90
       }]);
-    }, 200);
+    }, settings.shootInterval);
   };
 
   const stopShooting = () => {
@@ -144,6 +153,19 @@ export default function BallBlastGame() {
           <div className="flex justify-between items-center mb-6">
             <div className="text-lg font-semibold text-gray-700">
               {t.score}: <span className="text-blue-600">{score}</span>
+            </div>
+            <div className="text-lg font-semibold text-gray-700">
+              {t.difficulty}:
+              <select
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value)}
+                disabled={isPlaying}
+                className="ml-2 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="easy">{t.easy}</option>
+                <option value="medium">{t.medium}</option>
+                <option value="hard">{t.hard}</option>
+              </select>
             </div>
             <div className="text-lg font-semibold text-gray-700">
               {t.highScore}: <span className="text-purple-600">{highScore}</span>

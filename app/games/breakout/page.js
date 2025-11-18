@@ -6,14 +6,33 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 const CANVAS_WIDTH = 480;
 const CANVAS_HEIGHT = 400;
-const PADDLE_WIDTH = 75;
-const PADDLE_HEIGHT = 10;
 const BALL_RADIUS = 8;
 const BRICK_ROWS = 5;
 const BRICK_COLS = 8;
 const BRICK_WIDTH = 55;
 const BRICK_HEIGHT = 20;
 const BRICK_PADDING = 5;
+
+const DIFFICULTY_SETTINGS = {
+  easy: {
+    ballSpeed: 2.5,
+    paddleWidth: 100,
+    paddleHeight: 10,
+    name: 'Easy'
+  },
+  medium: {
+    ballSpeed: 3.5,
+    paddleWidth: 75,
+    paddleHeight: 10,
+    name: 'Medium'
+  },
+  hard: {
+    ballSpeed: 5,
+    paddleWidth: 60,
+    paddleHeight: 10,
+    name: 'Hard'
+  }
+};
 
 export default function BreakoutGame() {
   const { t } = useLanguage();
@@ -23,11 +42,13 @@ export default function BreakoutGame() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [won, setWon] = useState(false);
+  const [difficulty, setDifficulty] = useState('medium');
   const animationRef = useRef(null);
   const gameStateRef = useRef({
-    paddle: { x: CANVAS_WIDTH / 2 - PADDLE_WIDTH / 2, y: CANVAS_HEIGHT - 30 },
+    paddle: { x: CANVAS_WIDTH / 2 - 75 / 2, y: CANVAS_HEIGHT - 30 },
     ball: { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT - 50, dx: 3, dy: -3 },
-    bricks: []
+    bricks: [],
+    difficulty: 'medium'
   });
 
   useEffect(() => {
@@ -50,10 +71,25 @@ export default function BreakoutGame() {
   };
 
   const startGame = () => {
+    const settings = DIFFICULTY_SETTINGS[difficulty];
+    const angle = (Math.random() * 60 - 30) * (Math.PI / 180); // Random angle between -30 and 30 degrees
+    const speed = settings.ballSpeed;
+
     gameStateRef.current = {
-      paddle: { x: CANVAS_WIDTH / 2 - PADDLE_WIDTH / 2, y: CANVAS_HEIGHT - 30 },
-      ball: { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT - 50, dx: 3, dy: -3 },
-      bricks: initBricks()
+      paddle: {
+        x: CANVAS_WIDTH / 2 - settings.paddleWidth / 2,
+        y: CANVAS_HEIGHT - 30,
+        width: settings.paddleWidth,
+        height: settings.paddleHeight
+      },
+      ball: {
+        x: CANVAS_WIDTH / 2,
+        y: CANVAS_HEIGHT - 50,
+        dx: speed * Math.sin(angle),
+        dy: -speed * Math.cos(angle)
+      },
+      bricks: initBricks(),
+      difficulty: difficulty
     };
     setScore(0);
     setIsPlaying(true);
@@ -83,7 +119,7 @@ export default function BreakoutGame() {
 
     // Draw paddle
     ctx.fillStyle = '#22c55e';
-    ctx.fillRect(paddle.x, paddle.y, PADDLE_WIDTH, PADDLE_HEIGHT);
+    ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
 
     // Draw ball
     ctx.beginPath();
@@ -112,9 +148,16 @@ export default function BreakoutGame() {
     if (
       ball.y + ball.dy > paddle.y - BALL_RADIUS &&
       ball.x > paddle.x &&
-      ball.x < paddle.x + PADDLE_WIDTH
+      ball.x < paddle.x + paddle.width
     ) {
-      ball.dy = -ball.dy;
+      // Add spin based on where the ball hits the paddle
+      const hitPos = (ball.x - paddle.x) / paddle.width; // 0 to 1
+      const angle = (hitPos - 0.5) * 60 * (Math.PI / 180); // -30 to 30 degrees
+      const settings = DIFFICULTY_SETTINGS[gameStateRef.current.difficulty];
+      const speed = settings.ballSpeed;
+
+      ball.dx = speed * Math.sin(angle);
+      ball.dy = -speed * Math.cos(angle);
     }
 
     // Bottom wall
@@ -178,9 +221,10 @@ export default function BreakoutGame() {
       const canvas = canvasRef.current;
       const rect = canvas.getBoundingClientRect();
       const relativeX = e.clientX - rect.left;
-      gameStateRef.current.paddle.x = Math.max(
+      const paddle = gameStateRef.current.paddle;
+      paddle.x = Math.max(
         0,
-        Math.min(relativeX - PADDLE_WIDTH / 2, CANVAS_WIDTH - PADDLE_WIDTH)
+        Math.min(relativeX - paddle.width / 2, CANVAS_WIDTH - paddle.width)
       );
     };
 
@@ -192,9 +236,22 @@ export default function BreakoutGame() {
     <GameLayout gameId="breakout">
       <div className="flex flex-col items-center gap-6">
         <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-2xl">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
             <div className="text-lg font-semibold text-gray-700">
               {t.score}: <span className="text-blue-600">{score}</span>
+            </div>
+            <div className="text-lg font-semibold text-gray-700">
+              {t.difficulty}:
+              <select
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value)}
+                disabled={isPlaying}
+                className="ml-2 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="easy">{t.easy}</option>
+                <option value="medium">{t.medium}</option>
+                <option value="hard">{t.hard}</option>
+              </select>
             </div>
             <div className="text-lg font-semibold text-gray-700">
               {t.highScore}: <span className="text-purple-600">{highScore}</span>
@@ -229,9 +286,46 @@ export default function BreakoutGame() {
             )}
           </div>
 
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <h3 className="font-semibold text-gray-800 mb-2">{t.controls}</h3>
-            <p className="text-gray-600">{t.games.breakout.controls}</p>
+          <div className="mt-6 space-y-4">
+            <div className="p-4 bg-blue-50 rounded-lg">
+              <h3 className="font-semibold text-gray-800 mb-2">{t.controls}</h3>
+              <p className="text-gray-600">{t.games.breakout.controls}</p>
+            </div>
+
+            <div className="p-4 bg-purple-50 rounded-lg">
+              <h3 className="font-semibold text-gray-800 mb-2">
+                {t.language === 'en' ? 'Difficulty Levels' : '难度级别'}
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span className="font-semibold text-gray-700">{t.easy}</span>
+                  </div>
+                  <span className="text-gray-600 ml-4">
+                    {t.language === 'en' ? 'Wider paddle, slower ball' : '宽挡板，慢球速'}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                    <span className="font-semibold text-gray-700">{t.medium}</span>
+                  </div>
+                  <span className="text-gray-600 ml-4">
+                    {t.language === 'en' ? 'Normal paddle, normal ball' : '正常挡板，正常球速'}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                    <span className="font-semibold text-gray-700">{t.hard}</span>
+                  </div>
+                  <span className="text-gray-600 ml-4">
+                    {t.language === 'en' ? 'Narrower paddle, faster ball' : '窄挡板，快球速'}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

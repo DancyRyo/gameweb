@@ -4,6 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import GameLayout from '@/components/GameLayout';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+const DIFFICULTY_SETTINGS = {
+  easy: { enemySpeed: 0.5, bulletSpeed: 2, playerSpeed: 2.5, enemyShootChance: 0.005 },
+  medium: { enemySpeed: 1, bulletSpeed: 3, playerSpeed: 2, enemyShootChance: 0.01 },
+  hard: { enemySpeed: 1.5, bulletSpeed: 4, playerSpeed: 1.5, enemyShootChance: 0.015 }
+};
+
 export default function TankWarGame() {
   const { t } = useLanguage();
   const [score, setScore] = useState(0);
@@ -15,7 +21,9 @@ export default function TankWarGame() {
   const [bullets, setBullets] = useState([]);
   const [enemyBullets, setEnemyBullets] = useState([]);
   const [playerHealth, setPlayerHealth] = useState(3);
+  const [difficulty, setDifficulty] = useState('medium');
   const keysPressed = useRef({});
+  const difficultyRef = useRef('medium');
 
   useEffect(() => {
     const saved = localStorage.getItem('tankwarHighScore');
@@ -30,6 +38,7 @@ export default function TankWarGame() {
     setEnemies([]);
     setBullets([]);
     setEnemyBullets([]);
+    difficultyRef.current = difficulty;
     spawnEnemy();
   };
 
@@ -88,25 +97,27 @@ export default function TankWarGame() {
     if (!isPlaying) return;
 
     const gameLoop = setInterval(() => {
+      const settings = DIFFICULTY_SETTINGS[difficultyRef.current];
+
       // Move player
       setPlayerPos(prev => {
         let newPos = { ...prev };
         let newDir = playerDirection;
 
         if (keysPressed.current['ArrowUp']) {
-          newPos.y = Math.max(5, prev.y - 2);
+          newPos.y = Math.max(5, prev.y - settings.playerSpeed);
           newDir = 'up';
         }
         if (keysPressed.current['ArrowDown']) {
-          newPos.y = Math.min(95, prev.y + 2);
+          newPos.y = Math.min(95, prev.y + settings.playerSpeed);
           newDir = 'down';
         }
         if (keysPressed.current['ArrowLeft']) {
-          newPos.x = Math.max(5, prev.x - 2);
+          newPos.x = Math.max(5, prev.x - settings.playerSpeed);
           newDir = 'left';
         }
         if (keysPressed.current['ArrowRight']) {
-          newPos.x = Math.min(95, prev.x + 2);
+          newPos.x = Math.min(95, prev.x + settings.playerSpeed);
           newDir = 'right';
         }
 
@@ -117,10 +128,11 @@ export default function TankWarGame() {
       // Move bullets
       setBullets(prev => prev.map(bullet => {
         const newBullet = { ...bullet };
-        if (bullet.direction === 'up') newBullet.y -= 3;
-        if (bullet.direction === 'down') newBullet.y += 3;
-        if (bullet.direction === 'left') newBullet.x -= 3;
-        if (bullet.direction === 'right') newBullet.x += 3;
+        const speed = settings.bulletSpeed;
+        if (bullet.direction === 'up') newBullet.y -= speed;
+        if (bullet.direction === 'down') newBullet.y += speed;
+        if (bullet.direction === 'left') newBullet.x -= speed;
+        if (bullet.direction === 'right') newBullet.x += speed;
         return newBullet;
       }).filter(b => b.x > 0 && b.x < 100 && b.y > 0 && b.y < 100));
 
@@ -134,13 +146,13 @@ export default function TankWarGame() {
         let newX = enemy.x;
         let newY = enemy.y;
 
-        if (enemy.direction === 'up') newY = Math.max(5, enemy.y - 1);
-        if (enemy.direction === 'down') newY = Math.min(60, enemy.y + 1);
-        if (enemy.direction === 'left') newX = Math.max(5, enemy.x - 1);
-        if (enemy.direction === 'right') newX = Math.min(95, enemy.x + 1);
+        if (enemy.direction === 'up') newY = Math.max(5, enemy.y - settings.enemySpeed);
+        if (enemy.direction === 'down') newY = Math.min(60, enemy.y + settings.enemySpeed);
+        if (enemy.direction === 'left') newX = Math.max(5, enemy.x - settings.enemySpeed);
+        if (enemy.direction === 'right') newX = Math.min(95, enemy.x + settings.enemySpeed);
 
         // Enemy shoots randomly
-        if (Math.random() < 0.01) {
+        if (Math.random() < settings.enemyShootChance) {
           setEnemyBullets(prevBullets => [...prevBullets, {
             id: Date.now() + Math.random(),
             x: enemy.x,
@@ -155,7 +167,7 @@ export default function TankWarGame() {
       // Move enemy bullets
       setEnemyBullets(prev => prev.map(bullet => ({
         ...bullet,
-        y: bullet.y + 2
+        y: bullet.y + settings.bulletSpeed
       })).filter(b => b.y < 100));
 
       // Check bullet collisions with enemies
@@ -234,6 +246,19 @@ export default function TankWarGame() {
           <div className="flex justify-between items-center mb-6">
             <div className="text-lg font-semibold text-gray-700">
               {t.score}: <span className="text-blue-600">{score}</span>
+            </div>
+            <div className="text-lg font-semibold text-gray-700">
+              {t.difficulty}:
+              <select
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value)}
+                disabled={isPlaying}
+                className="ml-2 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="easy">{t.easy}</option>
+                <option value="medium">{t.medium}</option>
+                <option value="hard">{t.hard}</option>
+              </select>
             </div>
             <div className="text-lg font-semibold text-gray-700">
               Health: <span className="text-red-600">{'❤️'.repeat(playerHealth)}</span>

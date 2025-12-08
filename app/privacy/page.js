@@ -3,13 +3,21 @@
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import Head from 'next/head';
 
 export default function PrivacyPage() {
   const { t } = useLanguage();
   const content = t.privacyPolicyContent;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+    <>
+      <Head>
+        <title>Privacy Policy - Classic Games Collection | Data Protection & Privacy</title>
+        <meta name="description" content="Read our Privacy Policy to understand how Classic Games Collection protects your privacy. We don't collect personal data - all games are stored locally on your device." />
+        <meta name="keywords" content="privacy policy, data protection, online games privacy, browser games security, no personal data collection" />
+        <link rel="canonical" href="https://yourdomain.com/privacy" />
+      </Head>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-lg shadow-lg border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
@@ -137,5 +145,6 @@ export default function PrivacyPage() {
         </div>
       </main>
     </div>
+    </>
   );
 }

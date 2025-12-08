@@ -3,13 +3,21 @@
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import Head from 'next/head';
 
 export default function AboutPage() {
   const { t } = useLanguage();
   const content = t.aboutUsContent;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+    <>
+      <Head>
+        <title>About Us - Classic Games Collection | Free Online Browser Games</title>
+        <meta name="description" content="Learn about Classic Games Collection - your ultimate destination for free online browser games. We offer 50+ classic games including Snake, Tetris, Pac-Man, and more!" />
+        <meta name="keywords" content="about classic games, free online games, browser games history, classic arcade games, retro gaming platform" />
+        <link rel="canonical" href="https://yourdomain.com/about" />
+      </Head>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-lg shadow-lg border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
@@ -125,5 +133,6 @@ export default function AboutPage() {
         </div>
       </main>
     </div>
+    </>
   );
 }

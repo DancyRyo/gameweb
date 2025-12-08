@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import Script from 'next/script';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { gameList } from '@/lib/i18n';
 import GameCard from '@/components/GameCard';
@@ -36,8 +37,71 @@ export default function Home() {
     { label: 'Hours of Fun', value: '∞', icon: '⏰', color: 'from-pink-500 to-pink-600' },
   ];
 
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Classic Games Collection",
+    "description": "Play 50+ free classic games online! Enjoy arcade, puzzle, strategy, and action games instantly in your browser - no download required!",
+    "url": "https://yourdomain.com",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://yourdomain.com/?search={search_term_string}",
+      "query-input": "required name=search_term_string"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Classic Games Collection",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://yourdomain.com/logo.png"
+      }
+    },
+    "offers": {
+      "@type": "AggregateOffer",
+      "priceCurrency": "USD",
+      "price": "0",
+      "offerCount": gameList.length
+    }
+  };
+
+  const gameCollectionData = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Classic Games Collection - Free Online Games",
+    "description": "Collection of 50+ free classic browser games",
+    "numberOfItems": gameList.length,
+    "itemListElement": gameList.slice(0, 10).map((game, index) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "item": {
+        "@type": "Game",
+        "name": t.games[game.id]?.name || game.id,
+        "description": t.games[game.id]?.description || "",
+        "url": `https://yourdomain.com/games/${game.id}`,
+        "genre": game.category,
+        "gamePlatform": "Web Browser",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    }))
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+    <>
+      <Script
+        id="website-schema"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <Script
+        id="game-collection-schema"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(gameCollectionData) }}
+      />
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
       {/* Animated Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
@@ -238,5 +302,6 @@ export default function Home() {
         }
       `}</style>
     </div>
+    </>
   );
 }

@@ -4,9 +4,17 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import GameLayout from '@/components/GameLayout';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-const ROWS = 20;
-const COLS = 10;
-const CELL_SIZE = 25;
+const DIFFICULTY_SETTINGS = {
+  easy: { speed: 1000, name: 'Easy' },
+  medium: { speed: 800, name: 'Medium' },
+  hard: { speed: 500, name: 'Hard' }
+};
+
+const SIZE_SETTINGS = {
+  small: { rows: 15, cols: 8, cellSize: 25 },
+  medium: { rows: 20, cols: 10, cellSize: 25 },
+  large: { rows: 24, cols: 12, cellSize: 22 }
+};
 
 const SHAPES = [
   [[1, 1, 1, 1]], // I
@@ -22,7 +30,10 @@ const COLORS = ['#00f0f0', '#f0f000', '#a000f0', '#f0a000', '#0000f0', '#00f000'
 
 export default function TetrisGame() {
   const { t } = useLanguage();
-  const [board, setBoard] = useState(Array(ROWS).fill().map(() => Array(COLS).fill(0)));
+  const [difficulty, setDifficulty] = useState('medium');
+  const [boardSize, setBoardSize] = useState('medium');
+  const sizeConfig = SIZE_SETTINGS[boardSize];
+  const [board, setBoard] = useState(Array(sizeConfig.rows).fill().map(() => Array(sizeConfig.cols).fill(0)));
   const [currentPiece, setCurrentPiece] = useState(null);
   const [currentPos, setCurrentPos] = useState({ x: 0, y: 0 });
   const [score, setScore] = useState(0);
@@ -47,6 +58,7 @@ export default function TetrisGame() {
   }, []);
 
   const canMove = useCallback((piece, pos, newBoard = board) => {
+    const { rows, cols } = SIZE_SETTINGS[boardSize];
     for (let y = 0; y < piece.shape.length; y++) {
       for (let x = 0; x < piece.shape[y].length; x++) {
         if (piece.shape[y][x]) {
@@ -54,8 +66,8 @@ export default function TetrisGame() {
           const newY = pos.y + y;
           if (
             newX < 0 ||
-            newX >= COLS ||
-            newY >= ROWS ||
+            newX >= cols ||
+            newY >= rows ||
             (newY >= 0 && newBoard[newY][newX])
           ) {
             return false;
@@ -64,7 +76,7 @@ export default function TetrisGame() {
       }
     }
     return true;
-  }, [board]);
+  }, [board, boardSize]);
 
   const rotatePiece = useCallback((piece) => {
     const rotated = piece.shape[0].map((_, i) =>
@@ -74,6 +86,7 @@ export default function TetrisGame() {
   }, []);
 
   const mergePiece = useCallback(() => {
+    const { rows, cols } = SIZE_SETTINGS[boardSize];
     const newBoard = board.map(row => [...row]);
     currentPiece.shape.forEach((row, y) => {
       row.forEach((cell, x) => {
@@ -89,10 +102,10 @@ export default function TetrisGame() {
 
     // Check for complete lines
     let linesCleared = 0;
-    for (let y = ROWS - 1; y >= 0; y--) {
+    for (let y = rows - 1; y >= 0; y--) {
       if (newBoard[y].every(cell => cell !== 0)) {
         newBoard.splice(y, 1);
-        newBoard.unshift(Array(COLS).fill(0));
+        newBoard.unshift(Array(cols).fill(0));
         linesCleared++;
         y++;
       }
@@ -115,7 +128,7 @@ export default function TetrisGame() {
 
     // Create new piece
     const newPiece = createPiece();
-    const newPos = { x: Math.floor(COLS / 2) - 1, y: 0 };
+    const newPos = { x: Math.floor(cols / 2) - 1, y: 0 };
 
     if (!canMove(newPiece, newPos, newBoard)) {
       setGameOver(true);
@@ -124,7 +137,7 @@ export default function TetrisGame() {
       setCurrentPiece(newPiece);
       setCurrentPos(newPos);
     }
-  }, [board, currentPiece, currentPos, canMove, createPiece, highScore]);
+  }, [board, currentPiece, currentPos, canMove, createPiece, highScore, boardSize]);
 
   const moveDown = useCallback(() => {
     if (!currentPiece) return;
@@ -154,9 +167,10 @@ export default function TetrisGame() {
   }, [currentPiece, currentPos, canMove, rotatePiece]);
 
   const startGame = () => {
-    const newBoard = Array(ROWS).fill().map(() => Array(COLS).fill(0));
+    const { rows, cols } = SIZE_SETTINGS[boardSize];
+    const newBoard = Array(rows).fill().map(() => Array(cols).fill(0));
     const newPiece = createPiece();
-    const newPos = { x: Math.floor(COLS / 2) - 1, y: 0 };
+    const newPos = { x: Math.floor(cols / 2) - 1, y: 0 };
 
     setBoard(newBoard);
     setCurrentPiece(newPiece);
@@ -174,10 +188,11 @@ export default function TetrisGame() {
 
   useEffect(() => {
     if (isPlaying && !isPaused && !gameOver) {
-      gameLoopRef.current = setInterval(moveDown, 800);
+      const speed = DIFFICULTY_SETTINGS[difficulty].speed;
+      gameLoopRef.current = setInterval(moveDown, speed);
       return () => clearInterval(gameLoopRef.current);
     }
-  }, [isPlaying, isPaused, gameOver, moveDown]);
+  }, [isPlaying, isPaused, gameOver, moveDown, difficulty]);
 
   useEffect(() => {
     const handleKeyPress = (e) => {
@@ -209,6 +224,7 @@ export default function TetrisGame() {
   }, [isPlaying, gameOver, isPaused, moveHorizontal, moveDown, rotate]);
 
   const renderBoard = () => {
+    const { rows, cols } = SIZE_SETTINGS[boardSize];
     const displayBoard = board.map(row => [...row]);
 
     if (currentPiece) {
@@ -217,7 +233,7 @@ export default function TetrisGame() {
           if (cell) {
             const boardY = currentPos.y + y;
             const boardX = currentPos.x + x;
-            if (boardY >= 0 && boardY < ROWS && boardX >= 0 && boardX < COLS) {
+            if (boardY >= 0 && boardY < rows && boardX >= 0 && boardX < cols) {
               displayBoard[boardY][boardX] = currentPiece.color;
             }
           }
@@ -232,13 +248,42 @@ export default function TetrisGame() {
     <GameLayout gameId="tetris">
       <div className="flex flex-col items-center gap-6">
         <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-2xl">
-          <div className="flex justify-between items-center mb-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             <div className="text-lg font-semibold text-gray-700">
               {t.score}: <span className="text-blue-600">{score}</span>
             </div>
             <div className="text-lg font-semibold text-gray-700">
               {t.language === 'en' ? 'Lines' : '行数'}: <span className="text-green-600">{lines}</span>
             </div>
+            <div className="text-lg font-semibold text-gray-700">
+              {t.difficulty}:
+              <select
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value)}
+                disabled={isPlaying}
+                className="ml-2 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                <option value="easy">{t.easy}</option>
+                <option value="medium">{t.medium}</option>
+                <option value="hard">{t.hard}</option>
+              </select>
+            </div>
+            <div className="text-lg font-semibold text-gray-700">
+              {t.language === 'en' ? 'Size' : '大小'}:
+              <select
+                value={boardSize}
+                onChange={(e) => setBoardSize(e.target.value)}
+                disabled={isPlaying}
+                className="ml-2 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                <option value="small">{t.language === 'en' ? 'Small' : '小'}</option>
+                <option value="medium">{t.language === 'en' ? 'Medium' : '中'}</option>
+                <option value="large">{t.language === 'en' ? 'Large' : '大'}</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center mb-4">
             <div className="text-lg font-semibold text-gray-700">
               {t.highScore}: <span className="text-purple-600">{highScore}</span>
             </div>
@@ -248,12 +293,12 @@ export default function TetrisGame() {
             <div
               className="border-4 border-gray-800 bg-gray-900"
               style={{
-                width: COLS * CELL_SIZE,
-                height: ROWS * CELL_SIZE,
+                width: sizeConfig.cols * sizeConfig.cellSize,
+                height: sizeConfig.rows * sizeConfig.cellSize,
                 position: 'relative',
                 display: 'grid',
-                gridTemplateRows: `repeat(${ROWS}, ${CELL_SIZE}px)`,
-                gridTemplateColumns: `repeat(${COLS}, ${CELL_SIZE}px)`
+                gridTemplateRows: `repeat(${sizeConfig.rows}, ${sizeConfig.cellSize}px)`,
+                gridTemplateColumns: `repeat(${sizeConfig.cols}, ${sizeConfig.cellSize}px)`
               }}
             >
               {renderBoard().map((row, y) =>

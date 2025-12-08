@@ -8,9 +8,12 @@ const CANVAS_WIDTH = 400;
 const CANVAS_HEIGHT = 600;
 const BIRD_SIZE = 30;
 const PIPE_WIDTH = 60;
-const PIPE_GAP = 150;
-const GRAVITY = 0.6;
-const JUMP = -10;
+
+const DIFFICULTY_SETTINGS = {
+  easy: { gravity: 0.4, jump: -9, pipeSpeed: 2, pipeGap: 180, pipeSpacing: 300 },
+  medium: { gravity: 0.6, jump: -10, pipeSpeed: 3, pipeGap: 150, pipeSpacing: 250 },
+  hard: { gravity: 0.8, jump: -11, pipeSpeed: 4, pipeGap: 120, pipeSpacing: 220 }
+};
 
 export default function FlappyBirdGame() {
   const { t } = useLanguage();
@@ -19,11 +22,13 @@ export default function FlappyBirdGame() {
   const [highScore, setHighScore] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [gameOver, setGameOver] = useState(false);
+  const [difficulty, setDifficulty] = useState('medium');
   const animationRef = useRef(null);
   const gameStateRef = useRef({
     birdY: CANVAS_HEIGHT / 2,
     birdVelocity: 0,
-    pipes: []
+    pipes: [],
+    difficulty: 'medium'
   });
 
   useEffect(() => {
@@ -35,7 +40,8 @@ export default function FlappyBirdGame() {
     gameStateRef.current = {
       birdY: CANVAS_HEIGHT / 2,
       birdVelocity: 0,
-      pipes: [{ x: CANVAS_WIDTH, height: 200 }]
+      pipes: [{ x: CANVAS_WIDTH, height: 200 }],
+      difficulty: difficulty
     };
     setScore(0);
     setIsPlaying(true);
@@ -44,7 +50,8 @@ export default function FlappyBirdGame() {
 
   const jump = () => {
     if (!isPlaying || gameOver) return;
-    gameStateRef.current.birdVelocity = JUMP;
+    const settings = DIFFICULTY_SETTINGS[gameStateRef.current.difficulty || 'medium'];
+    gameStateRef.current.birdVelocity = settings.jump;
   };
 
   const draw = useCallback(() => {
@@ -52,7 +59,8 @@ export default function FlappyBirdGame() {
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
-    const { birdY, pipes } = gameStateRef.current;
+    const { birdY, pipes, difficulty } = gameStateRef.current;
+    const settings = DIFFICULTY_SETTINGS[difficulty || 'medium'];
 
     // Clear canvas
     ctx.fillStyle = '#87ceeb';
@@ -70,7 +78,7 @@ export default function FlappyBirdGame() {
       // Top pipe
       ctx.fillRect(pipe.x, 0, PIPE_WIDTH, pipe.height);
       // Bottom pipe
-      ctx.fillRect(pipe.x, pipe.height + PIPE_GAP, PIPE_WIDTH, CANVAS_HEIGHT);
+      ctx.fillRect(pipe.x, pipe.height + settings.pipeGap, PIPE_WIDTH, CANVAS_HEIGHT);
     });
 
     // Draw score
@@ -81,9 +89,10 @@ export default function FlappyBirdGame() {
 
   const update = useCallback(() => {
     const state = gameStateRef.current;
+    const settings = DIFFICULTY_SETTINGS[state.difficulty || 'medium'];
 
     // Update bird
-    state.birdVelocity += GRAVITY;
+    state.birdVelocity += settings.gravity;
     state.birdY += state.birdVelocity;
 
     // Check ground/ceiling collision
@@ -99,7 +108,7 @@ export default function FlappyBirdGame() {
 
     // Update pipes
     state.pipes.forEach((pipe, index) => {
-      pipe.x -= 3;
+      pipe.x -= settings.pipeSpeed;
 
       // Check collision
       if (
@@ -108,7 +117,7 @@ export default function FlappyBirdGame() {
       ) {
         if (
           state.birdY - BIRD_SIZE / 2 < pipe.height ||
-          state.birdY + BIRD_SIZE / 2 > pipe.height + PIPE_GAP
+          state.birdY + BIRD_SIZE / 2 > pipe.height + settings.pipeGap
         ) {
           setIsPlaying(false);
           setGameOver(true);
@@ -130,10 +139,10 @@ export default function FlappyBirdGame() {
     state.pipes = state.pipes.filter(pipe => pipe.x > -PIPE_WIDTH);
 
     // Add new pipes
-    if (state.pipes.length === 0 || state.pipes[state.pipes.length - 1].x < CANVAS_WIDTH - 250) {
+    if (state.pipes.length === 0 || state.pipes[state.pipes.length - 1].x < CANVAS_WIDTH - settings.pipeSpacing) {
       state.pipes.push({
         x: CANVAS_WIDTH,
-        height: Math.random() * (CANVAS_HEIGHT - PIPE_GAP - 100) + 50
+        height: Math.random() * (CANVAS_HEIGHT - settings.pipeGap - 100) + 50
       });
     }
   }, [score, highScore]);
@@ -180,9 +189,22 @@ export default function FlappyBirdGame() {
     <GameLayout gameId="flappybird">
       <div className="flex flex-col items-center gap-6">
         <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-2xl">
-          <div className="flex justify-between items-center mb-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
             <div className="text-lg font-semibold text-gray-700">
               {t.score}: <span className="text-blue-600">{score}</span>
+            </div>
+            <div className="text-lg font-semibold text-gray-700">
+              {t.difficulty}:
+              <select
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value)}
+                disabled={isPlaying}
+                className="ml-2 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                <option value="easy">{t.easy}</option>
+                <option value="medium">{t.medium}</option>
+                <option value="hard">{t.hard}</option>
+              </select>
             </div>
             <div className="text-lg font-semibold text-gray-700">
               {t.highScore}: <span className="text-purple-600">{highScore}</span>

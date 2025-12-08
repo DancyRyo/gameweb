@@ -4,11 +4,24 @@ import { useState, useEffect, useRef } from 'react';
 import GameLayout from '@/components/GameLayout';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-const CANVAS_WIDTH = 400;
-const CANVAS_HEIGHT = 600;
 const PLAYER_SIZE = 40;
 const PLATFORM_WIDTH = 80;
 const PLATFORM_HEIGHT = 15;
+
+const SIZE_SETTINGS = {
+  small: {
+    width: 350,
+    height: 500
+  },
+  medium: {
+    width: 400,
+    height: 600
+  },
+  large: {
+    width: 500,
+    height: 700
+  }
+};
 
 const DIFFICULTY_SETTINGS = {
   easy: { gravity: 0.35, jumpForce: -10, playerSpeed: 4, platformSpacing: 60 },
@@ -24,11 +37,14 @@ export default function DoodleJumpGame() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [difficulty, setDifficulty] = useState('medium');
+  const [boardSize, setBoardSize] = useState('medium');
+  const sizeConfig = SIZE_SETTINGS[boardSize];
   const gameStateRef = useRef({
-    player: { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT - 100, velocityY: 0 },
+    player: { x: sizeConfig.width / 2, y: sizeConfig.height - 100, velocityY: 0 },
     platforms: [],
     score: 0,
-    keys: {}
+    keys: {},
+    boardSize: 'medium'
   });
 
   useEffect(() => {
@@ -36,12 +52,13 @@ export default function DoodleJumpGame() {
     if (saved) setHighScore(parseInt(saved));
   }, []);
 
-  const initPlatforms = () => {
+  const initPlatforms = (size) => {
+    const sizeConf = SIZE_SETTINGS[size];
     const settings = DIFFICULTY_SETTINGS[difficulty];
     const platforms = [];
     for (let i = 0; i < 8; i++) {
       platforms.push({
-        x: Math.random() * (CANVAS_WIDTH - PLATFORM_WIDTH),
+        x: Math.random() * (sizeConf.width - PLATFORM_WIDTH),
         y: i * settings.platformSpacing + 100
       });
     }
@@ -49,13 +66,15 @@ export default function DoodleJumpGame() {
   };
 
   const startGame = () => {
-    const initialPlatforms = initPlatforms();
+    const initialPlatforms = initPlatforms(boardSize);
+    const size = SIZE_SETTINGS[boardSize];
     gameStateRef.current = {
-      player: { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT - 100, velocityY: 0 },
+      player: { x: size.width / 2, y: size.height - 100, velocityY: 0 },
       platforms: initialPlatforms,
       score: 0,
       keys: {},
-      difficulty: difficulty
+      difficulty: difficulty,
+      boardSize: boardSize
     };
     setScore(0);
     setIsPlaying(true);
@@ -82,6 +101,7 @@ export default function DoodleJumpGame() {
     const gameLoop = setInterval(() => {
       const state = gameStateRef.current;
       const settings = DIFFICULTY_SETTINGS[state.difficulty || 'medium'];
+      const size = SIZE_SETTINGS[state.boardSize || 'medium'];
 
       // Player movement
       if (state.keys['ArrowLeft']) {
@@ -92,8 +112,8 @@ export default function DoodleJumpGame() {
       }
 
       // Wrap around screen
-      if (state.player.x < 0) state.player.x = CANVAS_WIDTH;
-      if (state.player.x > CANVAS_WIDTH) state.player.x = 0;
+      if (state.player.x < 0) state.player.x = size.width;
+      if (state.player.x > size.width) state.player.x = 0;
 
       // Gravity
       state.player.velocityY += settings.gravity;
@@ -114,9 +134,9 @@ export default function DoodleJumpGame() {
       }
 
       // Scroll platforms down when player is in upper half
-      if (state.player.y < CANVAS_HEIGHT / 2) {
-        const diff = CANVAS_HEIGHT / 2 - state.player.y;
-        state.player.y = CANVAS_HEIGHT / 2;
+      if (state.player.y < size.height / 2) {
+        const diff = size.height / 2 - state.player.y;
+        state.player.y = size.height / 2;
 
         state.platforms.forEach(platform => {
           platform.y += diff;
@@ -126,17 +146,17 @@ export default function DoodleJumpGame() {
         setScore(Math.floor(state.score));
 
         // Remove platforms that went off screen and add new ones
-        state.platforms = state.platforms.filter(p => p.y < CANVAS_HEIGHT);
+        state.platforms = state.platforms.filter(p => p.y < size.height);
         while (state.platforms.length < 8) {
           state.platforms.push({
-            x: Math.random() * (CANVAS_WIDTH - PLATFORM_WIDTH),
+            x: Math.random() * (size.width - PLATFORM_WIDTH),
             y: state.platforms.length > 0 ? Math.min(...state.platforms.map(p => p.y)) - settings.platformSpacing : 0
           });
         }
       }
 
       // Game over
-      if (state.player.y > CANVAS_HEIGHT) {
+      if (state.player.y > size.height) {
         setIsPlaying(false);
         setGameOver(true);
         if (state.score > highScore) {
@@ -149,7 +169,7 @@ export default function DoodleJumpGame() {
 
       // Draw
       ctx.fillStyle = '#e0f2fe';
-      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      ctx.fillRect(0, 0, size.width, size.height);
 
       // Draw platforms
       ctx.fillStyle = '#22c55e';
@@ -184,7 +204,7 @@ export default function DoodleJumpGame() {
     <GameLayout gameId="doodlejump">
       <div className="flex flex-col items-center gap-6">
         <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-2xl">
-          <div className="flex justify-between items-center mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             <div className="text-lg font-semibold text-gray-700">
               {t.score}: <span className="text-blue-600">{Math.floor(score)}</span>
             </div>
@@ -194,11 +214,24 @@ export default function DoodleJumpGame() {
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value)}
                 disabled={isPlaying}
-                className="ml-2 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="ml-2 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
               >
                 <option value="easy">{t.easy}</option>
                 <option value="medium">{t.medium}</option>
                 <option value="hard">{t.hard}</option>
+              </select>
+            </div>
+            <div className="text-lg font-semibold text-gray-700">
+              {t.language === 'en' ? 'Size' : '大小'}:
+              <select
+                value={boardSize}
+                onChange={(e) => setBoardSize(e.target.value)}
+                disabled={isPlaying}
+                className="ml-2 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                <option value="small">{t.language === 'en' ? 'Small' : '小'}</option>
+                <option value="medium">{t.language === 'en' ? 'Medium' : '中'}</option>
+                <option value="large">{t.language === 'en' ? 'Large' : '大'}</option>
               </select>
             </div>
             <div className="text-lg font-semibold text-gray-700">
@@ -209,8 +242,8 @@ export default function DoodleJumpGame() {
           <div className="flex justify-center mb-6">
             <canvas
               ref={canvasRef}
-              width={CANVAS_WIDTH}
-              height={CANVAS_HEIGHT}
+              width={sizeConfig.width}
+              height={sizeConfig.height}
               className="border-4 border-gray-300 rounded-lg"
             />
           </div>

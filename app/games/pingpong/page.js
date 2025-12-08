@@ -4,11 +4,24 @@ import { useState, useEffect, useRef } from 'react';
 import GameLayout from '@/components/GameLayout';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-const CANVAS_WIDTH = 800;
-const CANVAS_HEIGHT = 400;
 const PADDLE_WIDTH = 10;
 const PADDLE_HEIGHT = 80;
 const BALL_SIZE = 10;
+
+const SIZE_SETTINGS = {
+  small: {
+    width: 600,
+    height: 350
+  },
+  medium: {
+    width: 800,
+    height: 400
+  },
+  large: {
+    width: 1000,
+    height: 500
+  }
+};
 
 const DIFFICULTY_SETTINGS = {
   easy: { ballSpeed: 3, aiSpeed: 2.5 },
@@ -25,15 +38,18 @@ export default function PingPongGame() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [difficulty, setDifficulty] = useState('medium');
+  const [boardSize, setBoardSize] = useState('medium');
+  const sizeConfig = SIZE_SETTINGS[boardSize];
   const gameStateRef = useRef({
-    player: { x: 20, y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2 },
-    ai: { x: CANVAS_WIDTH - 30, y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2 },
+    player: { x: 20, y: sizeConfig.height / 2 - PADDLE_HEIGHT / 2 },
+    ai: { x: sizeConfig.width - 30, y: sizeConfig.height / 2 - PADDLE_HEIGHT / 2 },
     ball: {
-      x: CANVAS_WIDTH / 2,
-      y: CANVAS_HEIGHT / 2,
+      x: sizeConfig.width / 2,
+      y: sizeConfig.height / 2,
       velocityX: 5,
       velocityY: 5
-    }
+    },
+    boardSize: 'medium'
   });
 
   useEffect(() => {
@@ -43,16 +59,18 @@ export default function PingPongGame() {
 
   const startGame = () => {
     const settings = DIFFICULTY_SETTINGS[difficulty];
+    const size = SIZE_SETTINGS[boardSize];
     gameStateRef.current = {
-      player: { x: 20, y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2 },
-      ai: { x: CANVAS_WIDTH - 30, y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2 },
+      player: { x: 20, y: size.height / 2 - PADDLE_HEIGHT / 2 },
+      ai: { x: size.width - 30, y: size.height / 2 - PADDLE_HEIGHT / 2 },
       ball: {
-        x: CANVAS_WIDTH / 2,
-        y: CANVAS_HEIGHT / 2,
+        x: size.width / 2,
+        y: size.height / 2,
         velocityX: settings.ballSpeed * (Math.random() > 0.5 ? 1 : -1),
         velocityY: settings.ballSpeed * (Math.random() > 0.5 ? 1 : -1)
       },
-      difficulty: difficulty
+      difficulty: difficulty,
+      boardSize: boardSize
     };
     setPlayerScore(0);
     setAIScore(0);
@@ -63,9 +81,10 @@ export default function PingPongGame() {
   const resetBall = (direction) => {
     const state = gameStateRef.current;
     const settings = DIFFICULTY_SETTINGS[state.difficulty || 'medium'];
+    const size = SIZE_SETTINGS[state.boardSize || 'medium'];
     state.ball = {
-      x: CANVAS_WIDTH / 2,
-      y: CANVAS_HEIGHT / 2,
+      x: size.width / 2,
+      y: size.height / 2,
       velocityX: settings.ballSpeed * direction,
       velocityY: settings.ballSpeed * (Math.random() > 0.5 ? 1 : -1)
     };
@@ -80,9 +99,10 @@ export default function PingPongGame() {
     const handleMouseMove = (e) => {
       const rect = canvas.getBoundingClientRect();
       const mouseY = e.clientY - rect.top;
+      const size = SIZE_SETTINGS[gameStateRef.current.boardSize || 'medium'];
       gameStateRef.current.player.y = Math.max(
         0,
-        Math.min(CANVAS_HEIGHT - PADDLE_HEIGHT, mouseY - PADDLE_HEIGHT / 2)
+        Math.min(size.height - PADDLE_HEIGHT, mouseY - PADDLE_HEIGHT / 2)
       );
     };
 
@@ -90,13 +110,14 @@ export default function PingPongGame() {
 
     const gameLoop = setInterval(() => {
       const state = gameStateRef.current;
+      const size = SIZE_SETTINGS[state.boardSize || 'medium'];
 
       // Move ball
       state.ball.x += state.ball.velocityX;
       state.ball.y += state.ball.velocityY;
 
       // Ball collision with top and bottom
-      if (state.ball.y <= 0 || state.ball.y >= CANVAS_HEIGHT - BALL_SIZE) {
+      if (state.ball.y <= 0 || state.ball.y >= size.height - BALL_SIZE) {
         state.ball.velocityY = -state.ball.velocityY;
       }
 
@@ -133,7 +154,7 @@ export default function PingPongGame() {
       } else if (aiCenter > ballCenter + 35) {
         state.ai.y -= settings.aiSpeed;
       }
-      state.ai.y = Math.max(0, Math.min(CANVAS_HEIGHT - PADDLE_HEIGHT, state.ai.y));
+      state.ai.y = Math.max(0, Math.min(size.height - PADDLE_HEIGHT, state.ai.y));
 
       // Scoring
       if (state.ball.x <= 0) {
@@ -147,7 +168,7 @@ export default function PingPongGame() {
           return newScore;
         });
         resetBall(1);
-      } else if (state.ball.x >= CANVAS_WIDTH - BALL_SIZE) {
+      } else if (state.ball.x >= size.width - BALL_SIZE) {
         setPlayerScore(prev => {
           const newScore = prev + 1;
           if (newScore >= 10) {
@@ -166,15 +187,15 @@ export default function PingPongGame() {
 
       // Draw
       ctx.fillStyle = '#1e293b';
-      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      ctx.fillRect(0, 0, size.width, size.height);
 
       // Draw center line
       ctx.strokeStyle = '#475569';
       ctx.lineWidth = 2;
       ctx.setLineDash([10, 10]);
       ctx.beginPath();
-      ctx.moveTo(CANVAS_WIDTH / 2, 0);
-      ctx.lineTo(CANVAS_WIDTH / 2, CANVAS_HEIGHT);
+      ctx.moveTo(size.width / 2, 0);
+      ctx.lineTo(size.width / 2, size.height);
       ctx.stroke();
       ctx.setLineDash([]);
 
@@ -191,8 +212,8 @@ export default function PingPongGame() {
       // Draw scores
       ctx.fillStyle = '#64748b';
       ctx.font = 'bold 48px monospace';
-      ctx.fillText(playerScore.toString(), CANVAS_WIDTH / 4, 60);
-      ctx.fillText(aiScore.toString(), (CANVAS_WIDTH * 3) / 4, 60);
+      ctx.fillText(playerScore.toString(), size.width / 4, 60);
+      ctx.fillText(aiScore.toString(), (size.width * 3) / 4, 60);
     }, 1000 / 60);
 
     return () => {
@@ -204,8 +225,8 @@ export default function PingPongGame() {
   return (
     <GameLayout gameId="pingpong">
       <div className="flex flex-col items-center gap-6">
-        <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-4xl">
-          <div className="flex justify-between items-center mb-6">
+        <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-6xl">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             <div className="text-lg font-semibold text-blue-600">
               Player: <span className="text-2xl">{playerScore}</span>
             </div>
@@ -215,11 +236,24 @@ export default function PingPongGame() {
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value)}
                 disabled={isPlaying}
-                className="ml-2 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="ml-2 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
               >
                 <option value="easy">{t.easy}</option>
                 <option value="medium">{t.medium}</option>
                 <option value="hard">{t.hard}</option>
+              </select>
+            </div>
+            <div className="text-lg font-semibold text-gray-700">
+              {t.language === 'en' ? 'Size' : '大小'}:
+              <select
+                value={boardSize}
+                onChange={(e) => setBoardSize(e.target.value)}
+                disabled={isPlaying}
+                className="ml-2 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                <option value="small">{t.language === 'en' ? 'Small' : '小'}</option>
+                <option value="medium">{t.language === 'en' ? 'Medium' : '中'}</option>
+                <option value="large">{t.language === 'en' ? 'Large' : '大'}</option>
               </select>
             </div>
             <div className="text-lg font-semibold text-red-600">
@@ -230,8 +264,8 @@ export default function PingPongGame() {
           <div className="flex justify-center mb-6">
             <canvas
               ref={canvasRef}
-              width={CANVAS_WIDTH}
-              height={CANVAS_HEIGHT}
+              width={sizeConfig.width}
+              height={sizeConfig.height}
               className="border-4 border-gray-300 rounded-lg cursor-none"
             />
           </div>

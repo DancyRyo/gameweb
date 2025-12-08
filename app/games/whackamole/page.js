@@ -5,17 +5,24 @@ import GameLayout from '@/components/GameLayout';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 const GRID_SIZE = 9;
-const GAME_TIME = 30;
+
+const DIFFICULTY_SETTINGS = {
+  easy: { spawnInterval: 1000, gameTime: 40, moleStayTime: 1200 },
+  medium: { spawnInterval: 800, gameTime: 30, moleStayTime: 1000 },
+  hard: { spawnInterval: 500, gameTime: 25, moleStayTime: 700 }
+};
 
 export default function WhackAMoleGame() {
   const { t } = useLanguage();
   const [moles, setMoles] = useState(Array(GRID_SIZE).fill(false));
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(GAME_TIME);
+  const [difficulty, setDifficulty] = useState('medium');
+  const [timeLeft, setTimeLeft] = useState(DIFFICULTY_SETTINGS.medium.gameTime);
   const [isPlaying, setIsPlaying] = useState(false);
   const intervalRef = useRef(null);
   const timerRef = useRef(null);
+  const moleTimeoutRef = useRef(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('whackamoleHighScore');
@@ -23,8 +30,9 @@ export default function WhackAMoleGame() {
   }, []);
 
   const startGame = () => {
+    const settings = DIFFICULTY_SETTINGS[difficulty];
     setScore(0);
-    setTimeLeft(GAME_TIME);
+    setTimeLeft(settings.gameTime);
     setIsPlaying(true);
     setMoles(Array(GRID_SIZE).fill(false));
 
@@ -36,7 +44,13 @@ export default function WhackAMoleGame() {
         newMoles[index] = true;
         return newMoles;
       });
-    }, 800);
+
+      // Auto-hide mole after some time
+      clearTimeout(moleTimeoutRef.current);
+      moleTimeoutRef.current = setTimeout(() => {
+        setMoles(Array(GRID_SIZE).fill(false));
+      }, settings.moleStayTime);
+    }, settings.spawnInterval);
 
     // Timer
     timerRef.current = setInterval(() => {
@@ -54,6 +68,7 @@ export default function WhackAMoleGame() {
     setIsPlaying(false);
     clearInterval(intervalRef.current);
     clearInterval(timerRef.current);
+    clearTimeout(moleTimeoutRef.current);
     setMoles(Array(GRID_SIZE).fill(false));
 
     if (score > highScore) {
@@ -77,6 +92,7 @@ export default function WhackAMoleGame() {
     return () => {
       clearInterval(intervalRef.current);
       clearInterval(timerRef.current);
+      clearTimeout(moleTimeoutRef.current);
     };
   }, []);
 
@@ -84,9 +100,22 @@ export default function WhackAMoleGame() {
     <GameLayout gameId="whackamole">
       <div className="flex flex-col items-center gap-6">
         <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-2xl">
-          <div className="flex justify-between items-center mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             <div className="text-lg font-semibold text-gray-700">
               {t.score}: <span className="text-blue-600">{score}</span>
+            </div>
+            <div className="text-lg font-semibold text-gray-700">
+              {t.difficulty}:
+              <select
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value)}
+                disabled={isPlaying}
+                className="ml-2 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                <option value="easy">{t.easy}</option>
+                <option value="medium">{t.medium}</option>
+                <option value="hard">{t.hard}</option>
+              </select>
             </div>
             <div className="text-lg font-semibold text-gray-700">
               {t.time}: <span className="text-green-600">{timeLeft}s</span>

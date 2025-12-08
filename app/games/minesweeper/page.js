@@ -4,12 +4,15 @@ import { useState, useEffect } from 'react';
 import GameLayout from '@/components/GameLayout';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-const ROWS = 10;
-const COLS = 10;
-const MINES = 15;
+const DIFFICULTY_SETTINGS = {
+  easy: { rows: 8, cols: 8, mines: 10 },
+  medium: { rows: 10, cols: 10, mines: 15 },
+  hard: { rows: 12, cols: 12, mines: 25 }
+};
 
 export default function MinesweeperGame() {
   const { t } = useLanguage();
+  const [difficulty, setDifficulty] = useState('medium');
   const [board, setBoard] = useState([]);
   const [revealed, setRevealed] = useState([]);
   const [flagged, setFlagged] = useState([]);
@@ -17,6 +20,11 @@ export default function MinesweeperGame() {
   const [won, setWon] = useState(false);
 
   const initGame = () => {
+    const settings = DIFFICULTY_SETTINGS[difficulty];
+    const ROWS = settings.rows;
+    const COLS = settings.cols;
+    const MINES = settings.mines;
+
     // Create empty board
     const newBoard = Array(ROWS).fill().map(() => Array(COLS).fill(0));
 
@@ -62,6 +70,11 @@ export default function MinesweeperGame() {
 
   const revealCell = (row, col) => {
     if (gameOver || won || revealed[row][col] || flagged[row][col]) return;
+
+    const settings = DIFFICULTY_SETTINGS[difficulty];
+    const ROWS = settings.rows;
+    const COLS = settings.cols;
+    const MINES = settings.mines;
 
     const newRevealed = revealed.map(r => [...r]);
 
@@ -125,20 +138,35 @@ export default function MinesweeperGame() {
     return 'bg-gray-100';
   };
 
+  const settings = DIFFICULTY_SETTINGS[difficulty];
+
   return (
     <GameLayout gameId="minesweeper">
       <div className="flex flex-col items-center gap-6">
-        <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-2xl">
-          {(gameOver || won) && (
-            <div className="text-center mb-4">
+        <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-3xl">
+          <div className="flex justify-between items-center mb-4">
+            <div className="text-lg font-semibold text-gray-700">
+              {t.difficulty}:
+              <select
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value)}
+                disabled={!gameOver && !won}
+                className="ml-2 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                <option value="easy">{t.easy}</option>
+                <option value="medium">{t.medium}</option>
+                <option value="hard">{t.hard}</option>
+              </select>
+            </div>
+            {(gameOver || won) && (
               <div className={`text-2xl font-bold ${won ? 'text-green-600' : 'text-red-600'}`}>
                 {won ? t.youWin : t.gameOver}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           <div className="flex justify-center mb-4">
-            <div className="inline-grid gap-1 bg-gray-400 p-2 rounded" style={{ gridTemplateColumns: `repeat(${COLS}, 1fr)` }}>
+            <div className="inline-grid gap-1 bg-gray-400 p-2 rounded" style={{ gridTemplateColumns: `repeat(${settings.cols}, 1fr)` }}>
               {board.map((row, r) =>
                 row.map((cell, c) => (
                   <button

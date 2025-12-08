@@ -4,14 +4,37 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import GameLayout from '@/components/GameLayout';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-const CANVAS_WIDTH = 480;
-const CANVAS_HEIGHT = 400;
 const BALL_RADIUS = 8;
-const BRICK_ROWS = 5;
-const BRICK_COLS = 8;
-const BRICK_WIDTH = 55;
-const BRICK_HEIGHT = 20;
-const BRICK_PADDING = 5;
+
+const SIZE_SETTINGS = {
+  small: {
+    width: 400,
+    height: 320,
+    brickRows: 4,
+    brickCols: 6,
+    brickWidth: 60,
+    brickHeight: 20,
+    brickPadding: 5
+  },
+  medium: {
+    width: 480,
+    height: 400,
+    brickRows: 5,
+    brickCols: 8,
+    brickWidth: 55,
+    brickHeight: 20,
+    brickPadding: 5
+  },
+  large: {
+    width: 600,
+    height: 480,
+    brickRows: 6,
+    brickCols: 10,
+    brickWidth: 55,
+    brickHeight: 20,
+    brickPadding: 5
+  }
+};
 
 const DIFFICULTY_SETTINGS = {
   easy: {
@@ -43,12 +66,15 @@ export default function BreakoutGame() {
   const [gameOver, setGameOver] = useState(false);
   const [won, setWon] = useState(false);
   const [difficulty, setDifficulty] = useState('medium');
+  const [boardSize, setBoardSize] = useState('medium');
+  const sizeConfig = SIZE_SETTINGS[boardSize];
   const animationRef = useRef(null);
   const gameStateRef = useRef({
-    paddle: { x: CANVAS_WIDTH / 2 - 75 / 2, y: CANVAS_HEIGHT - 30 },
-    ball: { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT - 50, dx: 3, dy: -3 },
+    paddle: { x: sizeConfig.width / 2 - 75 / 2, y: sizeConfig.height - 30 },
+    ball: { x: sizeConfig.width / 2, y: sizeConfig.height - 50, dx: 3, dy: -3 },
     bricks: [],
-    difficulty: 'medium'
+    difficulty: 'medium',
+    boardSize: 'medium'
   });
 
   useEffect(() => {
@@ -56,13 +82,16 @@ export default function BreakoutGame() {
     if (saved) setHighScore(parseInt(saved));
   }, []);
 
-  const initBricks = () => {
+  const initBricks = (size) => {
+    const config = SIZE_SETTINGS[size];
     const bricks = [];
-    for (let row = 0; row < BRICK_ROWS; row++) {
-      for (let col = 0; col < BRICK_COLS; col++) {
+    for (let row = 0; row < config.brickRows; row++) {
+      for (let col = 0; col < config.brickCols; col++) {
         bricks.push({
-          x: col * (BRICK_WIDTH + BRICK_PADDING) + 35,
-          y: row * (BRICK_HEIGHT + BRICK_PADDING) + 30,
+          x: col * (config.brickWidth + config.brickPadding) + 35,
+          y: row * (config.brickHeight + config.brickPadding) + 30,
+          width: config.brickWidth,
+          height: config.brickHeight,
           status: 1
         });
       }
@@ -72,24 +101,26 @@ export default function BreakoutGame() {
 
   const startGame = () => {
     const settings = DIFFICULTY_SETTINGS[difficulty];
+    const size = SIZE_SETTINGS[boardSize];
     const angle = (Math.random() * 60 - 30) * (Math.PI / 180); // Random angle between -30 and 30 degrees
     const speed = settings.ballSpeed;
 
     gameStateRef.current = {
       paddle: {
-        x: CANVAS_WIDTH / 2 - settings.paddleWidth / 2,
-        y: CANVAS_HEIGHT - 30,
+        x: size.width / 2 - settings.paddleWidth / 2,
+        y: size.height - 30,
         width: settings.paddleWidth,
         height: settings.paddleHeight
       },
       ball: {
-        x: CANVAS_WIDTH / 2,
-        y: CANVAS_HEIGHT - 50,
+        x: size.width / 2,
+        y: size.height - 50,
         dx: speed * Math.sin(angle),
         dy: -speed * Math.cos(angle)
       },
-      bricks: initBricks(),
-      difficulty: difficulty
+      bricks: initBricks(boardSize),
+      difficulty: difficulty,
+      boardSize: boardSize
     };
     setScore(0);
     setIsPlaying(true);
@@ -102,18 +133,19 @@ export default function BreakoutGame() {
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
-    const { paddle, ball, bricks } = gameStateRef.current;
+    const { paddle, ball, bricks, boardSize } = gameStateRef.current;
+    const size = SIZE_SETTINGS[boardSize || 'medium'];
 
     // Clear canvas
-    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    ctx.clearRect(0, 0, size.width, size.height);
 
     // Draw bricks
     bricks.forEach(brick => {
       if (brick.status === 1) {
         ctx.fillStyle = '#3b82f6';
-        ctx.fillRect(brick.x, brick.y, BRICK_WIDTH, BRICK_HEIGHT);
+        ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
         ctx.strokeStyle = '#1e40af';
-        ctx.strokeRect(brick.x, brick.y, BRICK_WIDTH, BRICK_HEIGHT);
+        ctx.strokeRect(brick.x, brick.y, brick.width, brick.height);
       }
     });
 
@@ -130,14 +162,15 @@ export default function BreakoutGame() {
   }, []);
 
   const update = useCallback(() => {
-    const { paddle, ball, bricks } = gameStateRef.current;
+    const { paddle, ball, bricks, boardSize } = gameStateRef.current;
+    const size = SIZE_SETTINGS[boardSize || 'medium'];
 
     // Move ball
     ball.x += ball.dx;
     ball.y += ball.dy;
 
     // Wall collision
-    if (ball.x + ball.dx > CANVAS_WIDTH - BALL_RADIUS || ball.x + ball.dx < BALL_RADIUS) {
+    if (ball.x + ball.dx > size.width - BALL_RADIUS || ball.x + ball.dx < BALL_RADIUS) {
       ball.dx = -ball.dx;
     }
     if (ball.y + ball.dy < BALL_RADIUS) {
@@ -161,7 +194,7 @@ export default function BreakoutGame() {
     }
 
     // Bottom wall
-    if (ball.y + ball.dy > CANVAS_HEIGHT - BALL_RADIUS) {
+    if (ball.y + ball.dy > size.height - BALL_RADIUS) {
       setIsPlaying(false);
       setGameOver(true);
       return;
@@ -172,9 +205,9 @@ export default function BreakoutGame() {
       if (brick.status === 1) {
         if (
           ball.x > brick.x &&
-          ball.x < brick.x + BRICK_WIDTH &&
+          ball.x < brick.x + brick.width &&
           ball.y > brick.y &&
-          ball.y < brick.y + BRICK_HEIGHT
+          ball.y < brick.y + brick.height
         ) {
           ball.dy = -ball.dy;
           brick.status = 0;
@@ -222,9 +255,10 @@ export default function BreakoutGame() {
       const rect = canvas.getBoundingClientRect();
       const relativeX = e.clientX - rect.left;
       const paddle = gameStateRef.current.paddle;
+      const size = SIZE_SETTINGS[gameStateRef.current.boardSize || 'medium'];
       paddle.x = Math.max(
         0,
-        Math.min(relativeX - paddle.width / 2, CANVAS_WIDTH - paddle.width)
+        Math.min(relativeX - paddle.width / 2, size.width - paddle.width)
       );
     };
 
@@ -235,8 +269,8 @@ export default function BreakoutGame() {
   return (
     <GameLayout gameId="breakout">
       <div className="flex flex-col items-center gap-6">
-        <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-2xl">
-          <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+        <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-4xl">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             <div className="text-lg font-semibold text-gray-700">
               {t.score}: <span className="text-blue-600">{score}</span>
             </div>
@@ -246,11 +280,24 @@ export default function BreakoutGame() {
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value)}
                 disabled={isPlaying}
-                className="ml-2 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="ml-2 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
               >
                 <option value="easy">{t.easy}</option>
                 <option value="medium">{t.medium}</option>
                 <option value="hard">{t.hard}</option>
+              </select>
+            </div>
+            <div className="text-lg font-semibold text-gray-700">
+              {t.language === 'en' ? 'Size' : '大小'}:
+              <select
+                value={boardSize}
+                onChange={(e) => setBoardSize(e.target.value)}
+                disabled={isPlaying}
+                className="ml-2 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                <option value="small">{t.language === 'en' ? 'Small' : '小'}</option>
+                <option value="medium">{t.language === 'en' ? 'Medium' : '中'}</option>
+                <option value="large">{t.language === 'en' ? 'Large' : '大'}</option>
               </select>
             </div>
             <div className="text-lg font-semibold text-gray-700">
@@ -261,8 +308,8 @@ export default function BreakoutGame() {
           <div className="flex justify-center mb-4">
             <canvas
               ref={canvasRef}
-              width={CANVAS_WIDTH}
-              height={CANVAS_HEIGHT}
+              width={sizeConfig.width}
+              height={sizeConfig.height}
               className="border-4 border-gray-800 bg-gray-900"
             />
           </div>

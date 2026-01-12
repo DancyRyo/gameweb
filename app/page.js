@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 
 export default function Home() {
-  const [lang, setLang] = useState("en");
+  const [lang, setLang] = useState("zh");
 
   const content = {
     en: {
@@ -22,10 +22,10 @@ export default function Home() {
       switchLang: "中文",
       screenshots: "Screenshots",
       footer: "© 2026 Strawberry Gamepad Remote. Built for Mac players.",
-      mainImg: "/en.png",
+      mainImg: "/english.png",
     },
     zh: {
-      title: "草莓手柄",
+      title: "草莓手柄遥控器",
       subtitle: "映射遥控器",
       description: "将您的游戏手柄转变为功能强大的 Mac 遥控器。轻松将手柄按键映射到键盘按键、鼠标移动和系统快捷键。",
       download: "下载 .dmg",
@@ -39,20 +39,24 @@ export default function Home() {
       switchLang: "English",
       screenshots: "应用截图",
       footer: "© 2026 草莓手柄映射遥控器. 专为 Mac 玩家打造。",
-      mainImg: "/english.png",
+      mainImg: "/cn.png",
     },
   };
 
   const t = content[lang];
 
   return (
-    <main className="min-h-screen selection:bg-pink-200">
+    <main className="min-h-screen selection:bg-yellow-200">
       {/* Navigation */}
       <nav className="max-w-6xl mx-auto p-6 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-primary border-4 border-border flex items-center justify-center font-bold text-white text-xl">
-            🍓
-          </div>
+        <div className="flex items-center gap-3">
+          <Image
+            src="/logo.png"
+            alt="Strawberry Gamepad Logo"
+            width={48}
+            height={48}
+            className="retro-card !p-1 bg-white"
+          />
           <span className="retro-title text-sm md:text-lg hidden sm:block">
             {t.title}
           </span>
@@ -143,9 +147,7 @@ export default function Home() {
             <span>{t.footer}</span>
           </div>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-primary underline underline-offset-4">Twitter</a>
-            <a href="#" className="hover:text-primary underline underline-offset-4">GitHub</a>
-            <a href="#" className="hover:text-primary underline underline-offset-4">Support</a>
+            <a href="https://x.com/siantgirl" target="_blank" rel="noopener noreferrer" className="hover:text-primary underline underline-offset-4">X</a>
           </div>
         </div>
       </footer>
@@ -153,6 +155,22 @@ export default function Home() {
       {/* Floating Retro Decors */}
       <div className="fixed top-20 right-10 -z-10 text-6xl opacity-10 animate-pulse pointer-events-none">🎮</div>
       <div className="fixed bottom-20 left-10 -z-10 text-6xl opacity-10 animate-bounce pointer-events-none">🍓</div>
+
+      {/* Floating Donation QR */}
+      <div className="fixed bottom-8 right-8 z-50 group">
+        <div className="retro-card !p-2 bg-white flex flex-col items-center gap-2 transform transition-transform group-hover:-translate-y-2">
+          <Image
+            src="/qr.jpg"
+            alt="Buy me a milk tea"
+            width={240}
+            height={240}
+            className="rounded-sm"
+          />
+          <span className="text-[10px] font-bold text-primary-dark whitespace-nowrap">
+            请我喝奶茶 🍵
+          </span>
+        </div>
+      </div>
     </main>
   );
 }

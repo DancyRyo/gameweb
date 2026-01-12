@@ -3,13 +3,18 @@
 @tailwind utilities;
 
 :root {
-  --background: #fff5f7;
+  --background: #f0f0e0;
+  /* Warm retro beige */
   --foreground: #2d3436;
-  --primary: #ff4d6d;
-  --primary-dark: #c9184a;
-  --secondary: #ffccd5;
-  --accent: #ff8fa3;
-  --border: #4a4e69;
+  --primary: #d63031;
+  /* Retro controller red */
+  --primary-dark: #a02020;
+  --secondary: #dfe6e9;
+  /* Light console grey */
+  --accent: #636e72;
+  /* D-pad grey */
+  --border: #2d3436;
+  /* Sharp dark borders */
 }
 
 body {

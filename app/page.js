@@ -162,8 +162,8 @@ export default function Home() {
           <Image
             src="/qr.jpg"
             alt="Buy me a milk tea"
-            width={240}
-            height={240}
+            width={180}
+            height={180}
             className="rounded-sm"
           />
           <span className="text-[10px] font-bold text-primary-dark whitespace-nowrap">

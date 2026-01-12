@@ -12,8 +12,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "我的日常助手",
-  description: "物品价值追踪、支出管理和重要事项记录",
+  title: "草莓手柄映射遥控器",
+  description: "把你的手柄变成遥控器",
 };
 
 export default function RootLayout({ children }) {

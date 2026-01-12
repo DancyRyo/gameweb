@@ -3,18 +3,63 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #fff5f7;
+  --foreground: #2d3436;
+  --primary: #ff4d6d;
+  --primary-dark: #c9184a;
+  --secondary: #ffccd5;
+  --accent: #ff8fa3;
+  --border: #4a4e69;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+@layer components {
+  .retro-card {
+    background: white;
+    border: 4px solid var(--border);
+    box-shadow: 8px 8px 0px var(--border);
+    padding: 2rem;
+    transition: all 0.2s ease;
+  }
+
+  .retro-btn {
+    background: var(--primary);
+    color: white;
+    border: 4px solid var(--border);
+    box-shadow: 4px 4px 0px var(--border);
+    padding: 0.75rem 1.5rem;
+    font-family: var(--font-press-start), cursive;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    transition: all 0.1s ease;
+    cursor: pointer;
+    display: inline-block;
+  }
+
+  .retro-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px var(--border);
+  }
+
+  .retro-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0px 0px 0px var(--border);
+  }
+
+  .retro-title {
+    font-family: var(--font-press-start), cursive;
+    color: var(--primary-dark);
+    line-height: 1.5;
+  }
+
+  .pixel-border {
+    position: relative;
+    border: 4px solid var(--border);
+    background: white;
+  }
 }

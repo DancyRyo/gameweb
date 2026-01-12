@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Press_Start_2P } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -11,16 +11,31 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const pressStart2P = Press_Start_2P({
+  weight: "400",
+  variable: "--font-press-start",
+  subsets: ["latin"],
+});
+
 export const metadata = {
-  title: "草莓手柄映射遥控器",
-  description: "把你的手柄变成遥控器",
+  title: "Strawberry Gamepad Mapper - Control your Mac with a Gamepad",
+  description: "The best tool for Mac users to map gamepad inputs to keyboard and mouse events. Perfect for remote control and gaming. Free download for macOS.",
+  keywords: "gamepad mapper, mac remote, strawberry gamepad, mac gamepad controller, game controller to mouse",
+  alternates: {
+    canonical: "https://strawberry-mapper.com", // Placeholder
+  },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${pressStart2P.variable} antialiased`}
       >
         {children}
       </body>
